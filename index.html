@@ -50,18 +50,18 @@ async function load(){const m=await api('GET','/rest/v1/members?select=*&active=
  const id=m[0].shop_id,q='?shop_id=eq.'+id+'&order=created_at.desc',g=p=>api('GET','/rest/v1/'+p);
  const [sh,p,c,s,e,qq,mb]=await Promise.all([g('shops?id=eq.'+id),g('products?shop_id=eq.'+id+'&order=name'),g('customers?shop_id=eq.'+id+'&order=name'),g('sales?select=*,sale_items(*)&shop_id=eq.'+id+'&order=created_at.desc&limit=500'),g('expenses'+q),g('quotes'+q),g('members?select=*&active=eq.true&shop_id=eq.'+id)]);
  S={sid:id,role:m[0].role,sh:sh[0],p,c,s,e,q:qq,mb}}
-async function boot(){if(ses){try{await load()}catch(e){S=/fetch|network/i.test(e.message)?{err:e.message}:null;if(!S)out()}}draw()}
+async function boot(){if(ses){try{await load()}catch(e){S={err:e.message}}}draw()}
 async function w(m,p,b){try{await api(m,p,b,{Prefer:'return=minimal'});await load();draw()}catch(e){alert(e.message)}}
 function navd(){const n=$('nv');n.style.display=S&&S.sh?'flex':'none';n.innerHTML=[['home','Accueil'],['cash','Caisse'],['stock','Stock'],['cli','Clients'],['more','Plus']].map(([k,l])=>`<button class="${tab==k?'on':''}" onclick="go('${k}')">${l}</button>`).join('')}
 function go(t,s=''){tab=t;sub=s;draw()}
 function draw(){navd();const sh=S&&S.sh;$('biz').textContent=sh?sh.name:'DataBrain Gestion';$('lg').style.display=sh&&sh.logo_url?'block':'none';if(sh&&sh.logo_url)$('lg').src=sh.logo_url;
  $('who').textContent=sh?(RL[S.role]||'')+' · '+ses.em:'';
- $('v').innerHTML=!ses?authV():!S?'<p class="mu">Chargement…</p>':S.err?`<div class="card"><p>Pas de connexion. (${S.err})</p><button class="p" onclick="boot()">Réessayer</button></div>`:S.noshop?shopV():({home,cash,stock,cli,more})[tab]();
+ $('v').innerHTML=!ses?authV():!S?'<p class="mu">Chargement…</p>':S.err?`<div class="card"><p>Erreur : ${S.err}</p><button class="p" onclick="boot()">Réessayer</button><button style="width:100%;margin-top:8px" onclick="out()">Se déconnecter</button></div>`:S.noshop?shopV():({home,cash,stock,cli,more})[tab]();
  if(sh&&tab=='more'&&sub=='set')qr('q2',120)}
 function authV(){return `<h1>${login?'Connexion':'Créer un compte'}</h1><div class="card"><input id="em" type="email" placeholder="E-mail"><input id="pw" type="password" placeholder="Mot de passe"><button class="p" onclick="auth()">${login?'Se connecter':'Créer mon compte'}</button><p class="mu" style="text-align:center" onclick="login=!login;msg='';draw()">${login?'Pas de compte ? Créer un compte':'Déjà un compte ? Se connecter'}</p><p class="low">${msg}</p></div>`}
 async function auth(){msg='';try{const b={email:$('em').value.trim(),password:$('pw').value};
  if(login){setSes(await api('POST','/auth/v1/token?grant_type=password',b));S=null;draw();await load()}
- else{const j=await api('POST','/auth/v1/signup',b);if(j.access_token){setSes(j);S=null;draw();await load()}else{msg='Compte créé. Vérifie ton e-mail, confirme, puis connecte-toi.';login=true}}}catch(e){msg=e.message;S=null}draw()}
+ else{const j=await api('POST','/auth/v1/signup',b);if(j.access_token){setSes(j);S=null;draw();await load()}else{msg='Compte créé. Vérifie ton e-mail, confirme, puis connecte-toi.';login=true}}}catch(e){msg=e.message;if(ses)S={err:e.message}}draw()}
 function shopV(){return `<h1>Ma boutique</h1><div class="card"><input id="sn0" placeholder="Nom de la boutique"><input id="ow" placeholder="Ton nom"><button class="p" onclick="mkShop()">Créer la boutique</button></div><button onclick="out()">Se déconnecter</button>`}
 async function mkShop(){try{await api('POST','/rest/v1/rpc/create_shop',{p_name:$('sn0').value.trim(),p_owner:$('ow').value.trim()||'Patron'});await load();draw()}catch(e){alert(e.message)}}
 function home(){const t=S.s.filter(x=>td(x.created_at));
