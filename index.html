@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DataBrain Gestion</title>
+<style>
+:root{--bg:#faf9f5;--card:#fff;--tx:#17231c;--mu:#6b7a70;--g:#2f7d4f;--gd:#245f3c;--au:#d9b24c;--bd:#e8e3d3;--rd:#b5432a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#121815;--card:#1c2520;--tx:#eef3ee;--mu:#9bab9f;--bd:#2d3a32}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:84px;max-width:560px;margin:auto}
+header{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;padding:14px 16px;border-bottom:5px dashed var(--au);display:flex;align-items:center;gap:10px}
+header b{font-size:18px;display:block}header small{opacity:.85}
+main{padding:14px}h1{margin:6px 0 12px;font-size:28px}label{display:block}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:14px;margin-bottom:12px}
+.hero{background:linear-gradient(135deg,var(--g),var(--gd));color:#fff;border:0}
+.hero .n{font-size:40px;font-weight:800}.hero .n i{color:var(--au);font-size:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.big{font-size:24px;font-weight:800}.mu{color:var(--mu);font-size:14px}
+input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:14px;background:var(--card);color:var(--tx);font-size:16px;margin:4px 0 8px}
+button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:12px 16px;border-radius:14px;font-size:15px;font-weight:600}
+button.p{background:var(--g);color:#fff;border:0;width:100%}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px dashed var(--bd)}
+.row:last-child{border:0}.low{color:var(--rd);font-weight:700}
+nav{position:fixed;bottom:0;left:0;right:0;max-width:560px;margin:auto;background:var(--card);border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;border-radius:0;background:none;color:var(--mu);font-size:13px;padding:12px 4px}
+nav button.on{color:var(--g);box-shadow:inset 0 3px var(--au)}
+.chips{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}.chips button.on{background:var(--g);color:#fff}
+.qa button{flex:1;padding:12px 4px}.qa button.p{width:auto}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);overflow:auto;padding:16px;z-index:9}.paper{background:#fff;color:#000;max-width:340px;margin:auto;padding:14px;font-size:13px;font-family:monospace}.paper img{max-width:100%}
+@media print{body>*:not(#rc){display:none!important}.noprint{display:none}.ov{position:static;background:none;padding:0}}
+</style></head><body>
+<header><img id="lg" width="44" height="44" alt="" style="display:none;border-radius:50%;border:2px solid var(--au);object-fit:cover"><div style="flex:1"><b id="biz">DataBrain Gestion</b><small id="who"></small></div><small id="st">☁️</small></header>
+<main id="v"></main><nav id="nv"></nav><div id="rc"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const U='https://cquklakstewjxwrcembo.supabase.co',K='sb_publishable_3Fgp4-PNPxh4qirkLgUgoQ_4con6j3S';
+let ses=null,S=null,tab='home',sub='',per='today',vm='',vq='',wp='',cart=[],pay='Espèces',cl='',mode='detail',msg='',login=true;
+try{ses=JSON.parse(localStorage.getItem('dbs')||'null')}catch(e){}
+const $=id=>document.getElementById(id),F=n=>Math.round(n).toLocaleString('fr-FR').replace(/\u202f/g,' ')+' F';
+const sum=(l,k)=>l.reduce((a,x)=>a+Number(x[k]||0),0),td=t=>new Date(t).toDateString()==new Date().toDateString();
+const RL={patron:'Patron',gerant:'Gérant',vendeur:'Vendeur'};
+async function api(m,p,b,h={},r=1){const x=await fetch(U+p,{method:m,headers:{apikey:K,Authorization:'Bearer '+(ses?ses.at:K),'Content-Type':'application/json',...h},body:b?JSON.stringify(b):undefined});
+ if(x.status==401&&ses&&r&&p.indexOf('/auth/')<0&&await refresh())return api(m,p,b,h,0);
+ const t=await x.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+ if(!x.ok)throw new Error((j&&(j.message||j.msg||j.error_description))||'Erreur '+x.status);return j}
+async function refresh(){try{setSes(await api('POST','/auth/v1/token?grant_type=refresh_token',{refresh_token:ses.rt},{},0));return true}catch(e){out();return false}}
+function setSes(j){ses={at:j.access_token,rt:j.refresh_token,uid:j.user.id,em:j.user.email};localStorage.setItem('dbs',JSON.stringify(ses))}
+function out(){ses=null;S=null;localStorage.removeItem('dbs');draw()}
+async function load(){const m=await api('GET','/rest/v1/members?select=*&active=eq.true&user_id=eq.'+ses.uid);
+ if(!m.length){S={noshop:1};return}
+ const id=m[0].shop_id,q='?shop_id=eq.'+id+'&order=created_at.desc',g=p=>api('GET','/rest/v1/'+p);
+ const [sh,p,c,s,e,qq,mb]=await Promise.all([g('shops?id=eq.'+id),g('products?shop_id=eq.'+id+'&order=name'),g('customers?shop_id=eq.'+id+'&order=name'),g('sales?select=*,sale_items(*)&shop_id=eq.'+id+'&order=created_at.desc&limit=500'),g('expenses'+q),g('quotes'+q),g('members?select=*&active=eq.true&shop_id=eq.'+id)]);
+ S={sid:id,role:m[0].role,sh:sh[0],p,c,s,e,q:qq,mb}}
+async function boot(){if(ses){try{await load()}catch(e){S=/fetch|network/i.test(e.message)?{err:e.message}:null;if(!S)out()}}draw()}
+async function w(m,p,b){try{await api(m,p,b,{Prefer:'return=minimal'});await load();draw()}catch(e){alert(e.message)}}
+function navd(){const n=$('nv');n.style.display=S&&S.sh?'flex':'none';n.innerHTML=[['home','Accueil'],['cash','Caisse'],['stock','Stock'],['cli','Clients'],['more','Plus']].map(([k,l])=>`<button class="${tab==k?'on':''}" onclick="go('${k}')">${l}</button>`).join('')}
+function go(t,s=''){tab=t;sub=s;draw()}
+function draw(){navd();const sh=S&&S.sh;$('biz').textContent=sh?sh.name:'DataBrain Gestion';$('lg').style.display=sh&&sh.logo_url?'block':'none';if(sh&&sh.logo_url)$('lg').src=sh.logo_url;
+ $('who').textContent=sh?(RL[S.role]||'')+' · '+ses.em:'';
+ $('v').innerHTML=!ses?authV():!S?'<p class="mu">Chargement…</p>':S.err?`<div class="card"><p>Pas de connexion. (${S.err})</p><button class="p" onclick="boot()">Réessayer</button></div>`:S.noshop?shopV():({home,cash,stock,cli,more})[tab]();
+ if(sh&&tab=='more'&&sub=='set')qr('q2',120)}
+function authV(){return `<h1>${login?'Connexion':'Créer un compte'}</h1><div class="card"><input id="em" type="email" placeholder="E-mail"><input id="pw" type="password" placeholder="Mot de passe"><button class="p" onclick="auth()">${login?'Se connecter':'Créer mon compte'}</button><p class="mu" style="text-align:center" onclick="login=!login;msg='';draw()">${login?'Pas de compte ? Créer un compte':'Déjà un compte ? Se connecter'}</p><p class="low">${msg}</p></div>`}
+async function auth(){msg='';try{const b={email:$('em').value.trim(),password:$('pw').value};
+ if(login){setSes(await api('POST','/auth/v1/token?grant_type=password',b));S=null;draw();await load()}
+ else{const j=await api('POST','/auth/v1/signup',b);if(j.access_token){setSes(j);S=null;draw();await load()}else{msg='Compte créé. Vérifie ton e-mail, confirme, puis connecte-toi.';login=true}}}catch(e){msg=e.message;S=null}draw()}
+function shopV(){return `<h1>Ma boutique</h1><div class="card"><input id="sn0" placeholder="Nom de la boutique"><input id="ow" placeholder="Ton nom"><button class="p" onclick="mkShop()">Créer la boutique</button></div><button onclick="out()">Se déconnecter</button>`}
+async function mkShop(){try{await api('POST','/rest/v1/rpc/create_shop',{p_name:$('sn0').value.trim(),p_owner:$('ow').value.trim()||'Patron'});await load();draw()}catch(e){alert(e.message)}}
+function home(){const t=S.s.filter(x=>td(x.created_at));
+return `<p class="mu">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</p><h1>Bonjour 👋</h1>
+<div class="card hero"><div>Ventes du jour</div><div class="n">${sum(t,'total').toLocaleString('fr-FR')} <i>F</i></div><div>${t.length} vente(s) · ${F(sum(t,'total')-sum(t,'credit_amount'))} encaissé</div></div>
+<div class="card qa" style="display:flex;gap:8px"><button class="p" onclick="go('cash')">Vente</button><button onclick="go('more','devis')">Devis</button><button onclick="go('stock')">Stock</button><button onclick="go('cli')">Clients</button></div>
+<div class="grid"><div class="card"><div class="big">${F(sum(t,'profit'))}</div><div class="mu">Bénéfice brut du jour</div></div>
+<div class="card"><div class="big">${F(sum(S.e.filter(x=>td(x.created_at)),'amount'))}</div><div class="mu">Dépenses du jour</div></div>
+<div class="card"><div class="big">${S.p.filter(p=>p.qty<=p.low_threshold).length}</div><div class="mu">Produit(s) en stock bas</div></div>
+<div class="card"><div class="big">${F(sum(S.c,'debt'))}</div><div class="mu">À récupérer (${S.c.filter(x=>x.debt>0).length} client)</div></div></div>`}
+const pr=p=>mode=='gros'?(p.wholesale_price||p.retail_price):p.retail_price;
+function cash(){const tot=cart.reduce((a,x)=>a+x.q*x.pu,0);
+return `<h1>Caisse</h1><div class="chips"><button class="${mode=='detail'?'on':''}" onclick="mode='detail';cart=[];draw()">Prix détail</button><button class="${mode=='gros'?'on':''}" onclick="mode='gros';cart=[];draw()">Prix gros</button></div>
+<div class="card"><select onchange="cl=this.value"><option value="">Client de passage</option>${S.c.map(c=>`<option ${cl==c.id?'selected':''} value="${c.id}">${c.name}</option>`).join('')}</select>
+<div class="mu">Produits (touche + pour ajouter)</div>${S.p.length?S.p.map(p=>`<div class="row"><span>${p.name}<br><small class="mu">${F(pr(p))} · stock ${p.qty}</small></span><button onclick="add('${p.id}')">+</button></div>`).join(''):'<p class="mu">Aucun produit. Ajoute-les dans l’onglet Stock.</p>'}</div>
+<div class="card"><b>Panier</b>${cart.length?cart.map(x=>`<div class="row"><span>${x.n} × ${x.q}</span><span>${F(x.q*x.pu)} <button onclick="rm('${x.id}')">−</button></span></div>`).join(''):'<p class="mu">Le panier est vide.</p>'}
+<div class="row"><b>Total</b><b class="big">${F(tot)}</b></div>
+<input placeholder="Téléphone WhatsApp du client (pour le reçu)" oninput="wp=this.value" value="${wp}"><select onchange="pay=this.value">${['Espèces','Mobile Money','Crédit'].map(m=>`<option ${pay==m?'selected':''}>${m}</option>`).join('')}</select>
+<button class="p" onclick="sell()">Valider la vente</button><button style="width:100%;margin-top:8px" onclick="mkDevis()">Enregistrer en devis</button></div>`}
+function add(id){const p=S.p.find(x=>x.id==id);let l=cart.find(x=>x.id==id);if(l){if(l.q<p.qty)l.q++}else if(p.qty>0)cart.push({id,n:p.name,q:1,pu:Number(pr(p))});draw()}
+function rm(id){const l=cart.find(x=>x.id==id);if(--l.q<=0)cart=cart.filter(x=>x.id!=id);draw()}
+const cname=()=>cl?S.c.find(c=>c.id==cl).name:'Client de passage';
+async function sell(){if(!cart.length)return;if(pay=='Crédit'&&!cl){alert('Choisis un client pour vendre à crédit.');return}
+ try{const id=await api('POST','/rest/v1/rpc/record_sale',{p_shop:S.sid,p_customer:cl||null,p_customer_name:cname(),p_pay:pay,p_items:cart.map(x=>({product_id:x.id,qty:x.q,unit_price:x.pu}))});
+ const t=wp;cart=[];wp='';await load();draw();receipt({...S.s.find(x=>x.id==id),tel:t})}catch(e){alert(e.message)}}
+function mkDevis(){if(!cart.length)return;w('POST','/rest/v1/quotes',{shop_id:S.sid,customer_name:cname(),total:cart.reduce((a,x)=>a+x.q*x.pu,0),items:cart.map(x=>({product_id:x.id,name:x.n,qty:x.q,unit_price:x.pu}))});cart=[];go('more','devis')}
+function stock(){return `<h1>Stock</h1><div class="chips"><button onclick="printStock()">Imprimer</button><button onclick="inv()">Inventaire</button><button onclick="labels()">Étiquettes</button></div>
+<div class="grid"><div class="card"><div class="mu">Valeur du stock (prix d’achat)</div><div class="big">${F(S.p.reduce((a,p)=>a+p.qty*p.buy_price,0))}</div></div><div class="card"><div class="mu">À commander</div><div class="big low">${S.p.filter(p=>p.qty<=p.low_threshold).length} produit(s)</div></div></div>
+<div class="card"><b>+ Produit</b><input id="pn" placeholder="Nom du produit"><input id="pa" type="number" placeholder="Prix d’achat (F)"><input id="pd" type="number" placeholder="Prix détail (F)"><input id="pg" type="number" placeholder="Prix gros (F)"><input id="pq" type="number" placeholder="Quantité en stock"><input id="pm" type="number" placeholder="Seuil de stock bas"><button class="p" onclick="addP()">Ajouter</button></div>
+<div class="card">${S.p.length?S.p.map(p=>`<div class="row"><span>${p.name}<br><small class="mu">Achat ${F(p.buy_price)} · Détail ${F(p.retail_price)}</small></span><span class="${p.qty<=p.low_threshold?'low':''}">${p.qty} <button onclick="ap('${p.id}')">+</button></span></div>`).join(''):'<p class="mu">Aucun produit.</p>'}</div>`}
+function addP(){const g=i=>Number($(i).value)||0,n=$('pn').value.trim();if(!n)return;w('POST','/rest/v1/products',{shop_id:S.sid,name:n,buy_price:g('pa'),retail_price:g('pd'),wholesale_price:g('pg')||g('pd'),qty:g('pq'),low_threshold:g('pm')})}
+function ap(id){const n=+prompt('Quantité reçue ?');if(n>0)w('PATCH','/rest/v1/products?id=eq.'+id,{qty:S.p.find(p=>p.id==id).qty+n,updated_at:new Date().toISOString()})}
+function cli(){return `<h1>Clients</h1><button onclick="debts()" style="margin-bottom:10px">État des dettes</button><div class="card"><b>+ Client</b><input id="cn" placeholder="Nom et prénoms"><input id="ct" placeholder="Téléphone WhatsApp"><button class="p" onclick="addC()">Ajouter</button></div>
+<div class="card">${S.c.length?S.c.map(c=>`<div class="row"><span>${c.name}<br><small class="mu">${c.phone||''}</small></span><span>${c.debt>0?`<b class="low">Dette ${F(c.debt)}</b> <button onclick="payD('${c.id}')">Payer</button>`:'—'}</span></div>`).join(''):'<p class="mu">Aucun client. Ajoute tes clients réguliers.</p>'}</div>`}
+function addC(){const n=$('cn').value.trim();if(n)w('POST','/rest/v1/customers',{shop_id:S.sid,name:n,phone:$('ct').value})}
+function payD(id){const c=S.c.find(x=>x.id==id),n=+prompt('Montant payé (F) ?');if(n>0)w('PATCH','/rest/v1/customers?id=eq.'+id,{debt:Math.max(0,c.debt-n),updated_at:new Date().toISOString()})}
+function more(){if(!sub)return '<h1>Plus</h1>'+[['ventes','Ventes'],['devis','Devis'],['dep','Dépenses'],['users','Utilisateurs'],['set','Paramètres']].map(([k,l])=>`<div class="card" onclick="go('more','${k}')"><b>${l}</b> ›</div>`).join('')+'<button onclick="out()">Se déconnecter</button>';
+ return `<button onclick="go('more')" style="margin-bottom:8px">‹ Retour</button>`+({ventes,devis,dep,users,set})[sub]()}
+function pf(){return `<div class="chips">${[['today','Aujourd’hui'],['yest','Hier'],['7','7 derniers jours'],['month','Ce mois'],['all','Tout']].map(([k,l])=>`<button class="${per==k?'on':''}" onclick="per='${k}';draw()">${l}</button>`).join('')}</div>`}
+function inP(ts){const d=new Date(ts),n=new Date(),a=new Date(n.getFullYear(),n.getMonth(),n.getDate()).getTime(),y=864e5;if(per=='today')return d>=a;if(per=='yest')return d>=a-y&&d<a;if(per=='7')return d>=a-6*y;if(per=='month')return d.getMonth()==n.getMonth()&&d.getFullYear()==n.getFullYear();return true}
+function ventes(){const l=S.s.filter(x=>inP(x.created_at)&&(!vm||x.pay_mode==vm)&&(!vq||JSON.stringify(x).toLowerCase().includes(vq.toLowerCase())));const t=sum(l,'total'),cr=sum(l,'credit_amount');
+return `<h1>Ventes</h1>${pf()}<select onchange="vm=this.value;draw()"><option value="">Tous les modes</option>${['Espèces','Mobile Money','Crédit'].map(m=>`<option ${vm==m?'selected':''}>${m}</option>`).join('')}</select><input placeholder="Client, produit, n° de reçu…" value="${vq}" onchange="vq=this.value;draw()">
+<div class="card hero"><div class="n">${F(t)}</div><div>${l.length} vente(s) · Encaissé ${F(t-cr)} · À crédit ${F(cr)}</div></div>
+<div class="card">${l.map(x=>`<div class="row" onclick="receipt(S.s[${S.s.indexOf(x)}])"><span>N° ${x.number} · ${x.customer_name}<br><small class="mu">${new Date(x.created_at).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${x.pay_mode}</small></span><b>${F(x.total)}</b></div>`).join('')||'<p class="mu">Aucune vente.</p>'}</div>`}
+function devis(){return `<h1>Devis</h1><p class="mu">Pour créer un devis : remplis le panier dans la Caisse, puis « Enregistrer en devis ».</p><div class="card">${S.q.length?S.q.map(q=>`<div class="row"><span>${q.customer_name}<br><small class="mu">${new Date(q.created_at).toLocaleDateString('fr-FR')} · ${q.items.length} article(s)</small></span><span><b>${F(q.total)}</b><br><button onclick="doc('DEVIS',S.q.find(x=>x.id=='${q.id}'))">Imprimer</button> <button onclick="cq('${q.id}')">Vendre</button></span></div>`).join(''):'<p class="mu">Aucun devis.</p>'}</div>`}
+function cq(id){const q=S.q.find(x=>x.id==id);cart=q.items.map(x=>({id:x.product_id,n:x.name,q:x.qty,pu:x.unit_price}));w('DELETE','/rest/v1/quotes?id=eq.'+id);go('cash')}
+function dep(){const l=S.e.filter(x=>inP(x.created_at));return `<h1>Dépenses</h1><div class="card"><select id="ec">${['Loyer','Électricité (CIE)','Eau (SODECI)','Transport','Salaires','Autre'].map(c=>`<option>${c}</option>`).join('')}</select><input id="ea" type="number" placeholder="Montant (F)"><input id="ed" placeholder="Détail (ex. facture CIE de septembre)"><button class="p" onclick="addE()">Ajouter la dépense</button></div><b>Toutes les dépenses</b>${pf()}<div class="card"><div class="row"><b>Total période</b><b>${F(sum(l,'amount'))}</b></div>${l.map(x=>`<div class="row"><span>${x.category}<br><small class="mu">${x.note||''} · ${new Date(x.created_at).toLocaleDateString('fr-FR')}</small></span><b>${F(x.amount)}</b></div>`).join('')}</div>`}
+function addE(){const a=+$('ea').value;if(a)w('POST','/rest/v1/expenses',{shop_id:S.sid,category:$('ec').value,amount:a,note:$('ed').value})}
+function users(){const pat=S.role=='patron';return `<h1>Utilisateurs</h1><div class="card"><div class="row"><span>Utilisateurs actifs</span><b>${S.mb.length} / ${S.sh.user_limit}</b></div>${S.mb.map(m=>`<div class="row"><span><b>${m.name}</b><br><small class="mu">${RL[m.role]}</small></span>${pat&&m.role!='patron'?`<button onclick="delU('${m.user_id}')">Retirer</button>`:''}</div>`).join('')}</div>
+${pat?`<div class="card"><b>Clé d’activation</b><p class="mu">${S.sh.user_limit} utilisateurs sont inclus. Une clé fournie par DataBrain permet d’en activer davantage.</p><input id="uk" placeholder="DB-XXXX-XXXX-XXXX"><button class="p" onclick="actK()">Activer</button></div>`:''}`}
+function delU(id){if(confirm('Retirer cet utilisateur ?'))w('PATCH','/rest/v1/members?shop_id=eq.'+S.sid+'&user_id=eq.'+id,{active:false})}
+async function actK(){try{const n=await api('POST','/rest/v1/rpc/activate_license',{p_shop:S.sid,p_key:$('uk').value});await load();draw();alert('Clé activée : '+n+' utilisateurs possibles')}catch(e){alert(e.message)}}
+function set(){const sh=S.sh,f=(id,l,v)=>`<label class="mu">${l}</label><input id="${id}" value="${(v||'').replace(/"/g,'&quot;')}">`;
+return `<h1>Paramètres</h1><div class="card"><b>Logo</b><br>${sh.logo_url?`<img src="${sh.logo_url}" width="80" style="border-radius:12px"><br>`:''}<input type="file" accept="image/png,image/jpeg" onchange="logo(this)">${sh.logo_url?`<button onclick="w('PATCH','/rest/v1/shops?id=eq.${S.sid}',{logo_url:null})">Retirer le logo</button>`:''}<p class="mu">Le logo apparaît en haut de l’application et sur les reçus imprimés.</p></div>
+<div class="card"><b>QR code de la boutique</b><p class="mu">Les clients le scannent : WhatsApp s’ouvre avec un message prêt. Il est aussi imprimé sur les reçus.</p><div id="q2"></div><button class="p" onclick="affiche()" style="margin-top:8px">Imprimer l’affiche du comptoir</button></div>
+<div class="card"><b>Entreprise</b>${f('sb','Nom de l’entreprise *',sh.name)}${f('ss','Slogan ou activité',sh.slogan)}${f('sa','Adresse',sh.address)}${f('st','Téléphone',sh.phone)}${f('se','Email',sh.email)}${f('sr','RCCM',sh.rccm)}${f('sn','N° compte contribuable (NCC)',sh.ncc)}${f('sm','Message en bas des reçus',sh.receipt_msg)}<button class="p" onclick="saveSet()">Enregistrer</button></div>`}
+function saveSet(){const g=i=>$(i).value;w('PATCH','/rest/v1/shops?id=eq.'+S.sid,{name:g('sb')||S.sh.name,slogan:g('ss'),address:g('sa'),phone:g('st'),email:g('se'),rccm:g('sr'),ncc:g('sn'),receipt_msg:g('sm')})}
+function logo(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=160;const m=Math.min(im.width,im.height);c.getContext('2d').drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,160,160);w('PATCH','/rest/v1/shops?id=eq.'+S.sid,{logo_url:c.toDataURL('image/jpeg',.8)})};im.src=r.result};r.readAsDataURL(f)}
+function ov(h,x=''){$('rc').innerHTML=`<div class="ov"><div class="paper">${h}</div><div class="noprint" style="max-width:340px;margin:8px auto"><button class="p" onclick="window.print()">Imprimer</button>${x}<button style="width:100%;margin-top:6px" onclick="$('rc').innerHTML=''">Fermer</button></div></div>`}
+function qr(id,s){try{new QRCode($(id),{text:'https://wa.me/'+(S.sh.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent('Bonjour '+S.sh.name),width:s,height:s})}catch(e){}}
+function doc(title,v){const sh=S.sh,it=(v.sale_items||v.items||[]).map(x=>`<tr><td>${x.name} × ${x.qty}</td><td align="right">${F(x.qty*x.unit_price)}</td></tr>`).join('');
+ const wa='https://wa.me/'+(v.tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(sh.name+' – '+title+' : '+F(v.total));
+ ov(`<center>${sh.logo_url?`<img src="${sh.logo_url}" width="60"><br>`:''}<b>${sh.name}</b><br>${sh.slogan||''}<br>${sh.address||''} ${sh.phone||''}<br>${sh.rccm?'RCCM '+sh.rccm:''} ${sh.ncc?'NCC '+sh.ncc:''}<hr><b>${title} ${v.number?'N° '+v.number:''}</b><br>${new Date(v.created_at).toLocaleString('fr-FR')}<br>${v.customer_name||''}</center><table width="100%">${it}</table><hr><b>TOTAL ${F(v.total)}</b>${v.pay_mode?'<br>Paiement : '+v.pay_mode:''}<center><p>${sh.receipt_msg||''}</p><div id="qr"></div></center>`,v.tel?`<a href="${wa}" target="_blank"><button style="width:100%;margin-top:6px">Envoyer par WhatsApp</button></a>`:'');qr('qr',90)}
+function receipt(v){doc('REÇU',v)}
+function affiche(){ov(`<center><b>${S.sh.name}</b><p>Scannez pour nous écrire sur WhatsApp</p><div id="qr"></div></center>`);qr('qr',220)}
+function printStock(){ov(`<b>Stock – ${S.sh.name}</b><table width="100%">${S.p.map(p=>`<tr><td>${p.name}</td><td align="right">${p.qty}</td></tr>`).join('')}</table><hr>Valeur : ${F(S.p.reduce((a,p)=>a+p.qty*p.buy_price,0))}`)}
+function labels(){ov(S.p.map(p=>`<div style="border:1px dashed #000;padding:6px;margin:4px 0"><b>${p.name}</b><br>${F(p.retail_price)}</div>`).join('')||'Aucun produit')}
+function inv(){ov(`<b>Inventaire</b>${S.p.map(p=>`<div>${p.name} (${p.qty})<input type="number" class="iv" data-id="${p.id}" placeholder="Quantité comptée" style="background:#fff;color:#000"></div>`).join('')||'Aucun produit'}`,`<button class="p" style="margin-bottom:6px" onclick="invOk()">Appliquer l’inventaire</button>`)}
+async function invOk(){try{for(const i of document.querySelectorAll('.iv'))if(i.value!=='')await api('PATCH','/rest/v1/products?id=eq.'+i.dataset.id,{qty:+i.value});$('rc').innerHTML='';await load();draw()}catch(e){alert(e.message)}}
+function debts(){const l=S.c.filter(c=>c.debt>0);ov(`<b>État des dettes</b><table width="100%">${l.map(c=>`<tr><td>${c.name}</td><td align="right">${F(c.debt)}</td></tr>`).join('')}</table><hr><b>Total ${F(sum(l,'debt'))}</b>`)}
+boot();
+</script></body></html>
